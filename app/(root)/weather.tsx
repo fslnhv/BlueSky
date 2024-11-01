@@ -1,6 +1,7 @@
 import {
   StatusBar,
   TextInput,
+  Text,
   TouchableOpacity,
   View,
   StyleSheet,
@@ -10,7 +11,8 @@ import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import { useState } from "react";
 
 export default function WeatherScreen() {
-  const [toggleSearch, setToggleSearch] = useState(false);
+  const [toggleSearch, setToggleSearch] = useState<boolean>(false);
+  const [location, setLocation] = useState<number[]>([1, 2, 3]);
   return (
     <View className={"flex-1 relative"}>
       <StatusBar style="auto" />
@@ -20,7 +22,9 @@ export default function WeatherScreen() {
           className={"mx-4 rounded-full relative z-50"}
         >
           <View
-            className={`flex-row justify-end items-center rounded-full ${toggleSearch ? `bg-gray-700` : `bg-transparent`}`}
+            className={`flex-row justify-end items-center rounded-full ${
+              toggleSearch ? `bg-gray-700` : `bg-transparent`
+            }`}
           >
             {toggleSearch ? (
               <TextInput
@@ -33,6 +37,7 @@ export default function WeatherScreen() {
             <TouchableOpacity
               style={styles.searchIcon}
               className={"rounded-full p-3 pr-3 m-1 bg-gray-700"}
+              onPress={() => setToggleSearch(!toggleSearch)}
             >
               <FontAwesome6
                 name="magnifying-glass"
@@ -41,6 +46,30 @@ export default function WeatherScreen() {
               />
             </TouchableOpacity>
           </View>
+
+          {location.length > 0 && toggleSearch ? (
+            <View>
+              {location.map((loc, index) => {
+                // Determine if we need a border for this item
+                const showBorder = index + 1 !== location.length;
+                const borderClass = showBorder
+                  ? "border-b-2 border-b-gray-400"
+                  : "";
+
+                return (
+                  <TouchableOpacity
+                    key={index}
+                    className={`flex-row items-center border-0 p-3 px-4 mb-1 ${borderClass}`}
+                  >
+                    <FontAwesome6 name="location-dot" size={24} color="black" />
+                    <Text className="ml-2 text-lg text-black">
+                      London, United Kingdom
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          ) : null}
         </View>
       </SafeAreaView>
     </View>
