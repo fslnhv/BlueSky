@@ -25,25 +25,24 @@ export default function WeatherScreen() {
   const [temperature, setTemperature] = useState<number>(23);
 
   return (
-    <View className={"flex-1 relative"}>
-      <StatusBar style="auto" />
-      <SafeAreaView className={"flex flex-1 bg-blue-100"}>
-        <View
-          style={{ height: "7%" }}
-          className={"mx-4 rounded-full relative z-50"}
-        >
-          <View
-            className={`flex-row justify-end items-center rounded-full ${
-              toggleSearch ? `bg-gray-700` : `bg-transparent`
-            }`}
-          >
-            {toggleSearch ? (
-              <TextInput
-                placeholder="Search city"
-                placeholderTextColor={"lightgray"}
-                className={"pl-6 h-10 flex-1 text-base text-grey "}
-              />
-            ) : null}
+      <View className="flex-1 relative">
+        <StatusBar />
+        <SafeAreaView className="flex-1 bg-blue-300">
+          {/* Search Section */}
+          <View className="mx-4 relative z-50">
+            <View
+                className={`flex-row justify-end items-center rounded-full ${
+                    toggleSearch ? 'bg-gray-700' : 'bg-transparent'
+                }`}
+            >
+              {toggleSearch ? (
+                  <TextInput
+                      onChangeText={handleTextDebounce}
+                      placeholder="Search city"
+                      placeholderTextColor="lightgray"
+                      className="pl-6 h-10 flex-1 text-base text-white"
+                  />
+              ) : null}
 
             <TouchableOpacity
               style={styles.searchIcon}
