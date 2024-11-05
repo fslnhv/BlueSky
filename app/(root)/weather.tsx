@@ -11,7 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import { useCallback, useState, useEffect } from "react";
-import { WeatherIconName, Location, WeatherData } from "@/types/weather";
+import {WeatherIconName, WeatherData, LocationType} from "@/types/weather";
 import WeatherIcon from "@/components/WeatherIcon";
 import ScrollView = Animated.ScrollView;
 import { debounce } from 'lodash';
