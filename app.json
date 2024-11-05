@@ -26,9 +26,14 @@
       "output": "server",
       "favicon": "./assets/images/favicon.png"
     },
-    "plugins": [
+    "plugins": [[
       "expo-router"
-    ],
+    ], [
+      "expo-location",
+      {
+        "locationAlwaysAndWhenInUsePermission": "Allow BlueSky to use your location."
+      }
+    ]],
     "experiments": {
       "typedRoutes": true
     },
