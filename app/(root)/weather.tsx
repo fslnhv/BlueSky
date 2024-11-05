@@ -108,42 +108,38 @@ export default function WeatherScreen() {
                   />
               ) : null}
 
-            <TouchableOpacity
-              style={styles.searchIcon}
-              className={"rounded-full p-3 pr-3 m-1 bg-gray-700"}
-              onPress={() => setToggleSearch(!toggleSearch)}
-            >
-              <FontAwesome6
-                name="magnifying-glass"
-                size={25}
-                color="lightgray"
-              />
-            </TouchableOpacity>
-          </View>
-
-          {location.length > 0 && toggleSearch ? (
-            <View>
-              {location.map((loc, index) => {
-                const showBorder = index + 1 !== location.length;
-                const borderClass = showBorder
-                  ? "border-b-2 border-b-gray-400"
-                  : "";
-
-                return (
-                  <TouchableOpacity
-                    key={index}
-                    className={`flex-row items-center border-0 p-3 px-4 mb-1 ${borderClass}`}
-                  >
-                    <FontAwesome6 name="location-dot" size={24} color="black" />
-                    <Text className="ml-2 text-lg text-black">
-                      London, United Kingdom
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
+              <TouchableOpacity
+                  className="rounded-full p-3 m-1 bg-gray-700"
+                  onPress={() => setToggleSearch(!toggleSearch)}
+              >
+                <FontAwesome6
+                    name="magnifying-glass"
+                    size={25}
+                    color="lightgray"
+                />
+              </TouchableOpacity>
             </View>
-          ) : null}
-        </View>
+
+            {/* Search Results */}
+            {locations.length > 0 && toggleSearch ? (
+                <View className="absolute w-full bg-white top-16 rounded-3xl">
+                  {locations.map((loc, index) => (
+                      <TouchableOpacity
+                          key={loc.id}
+                          onPress={() => handleLocationSelect(loc)}
+                          className={`flex-row items-center p-4 ${
+                              index !== locations.length - 1 ? 'border-b border-gray-200' : ''
+                          }`}
+                      >
+                        <FontAwesome6 name="location-dot" size={24} color="gray" />
+                        <Text className="ml-3 text-gray-800">
+                          {loc.name}, {loc.country}
+                        </Text>
+                      </TouchableOpacity>
+                  ))}
+                </View>
+            ) : null}
+          </View>
 
         {/*forecast section*/}
         <View className="mx-4 flex justify-around flex-1 mb-2">
