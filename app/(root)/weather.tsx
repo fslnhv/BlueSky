@@ -19,10 +19,74 @@ import ScrollView = Animated.ScrollView;
 
 export default function WeatherScreen() {
   const [toggleSearch, setToggleSearch] = useState<boolean>(false);
-  const [location, setLocation] = useState<number[]>([1, 2, 3]);
-  const [weatherCondition, setWeatherCondition] =
-    useState<WeatherIconName>("day-cloudy");
-  const [temperature, setTemperature] = useState<number>(23);
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [weatherCondition, setWeatherCondition] = useState<WeatherIconName>("day-cloudy");
+  const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    handleLocationSelect({ name: "London", country: "UK", id: "default" });
+  }, []);
+
+  const handleLocationSelect = async (location: Location) => {
+    try {
+      setLoading(true);
+      setError(null);
+      setToggleSearch(false);
+
+      const weather = await fetchWeatherForecast({
+        cityName: location.name,
+        days: 7
+      });
+
+      if (weather) {
+        setWeatherData(weather);
+        setWeatherCondition(weatherCodeToIcon(weather.current.condition.code));
+      }
+    } catch (err) {
+      setError("Failed to fetch weather data");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearch = async (value: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      if (value.length > 2) {
+        const data = await fetchLocation({ cityName: value });
+        if (data) {
+          const transformedLocations = data.map((item: any) => ({
+            name: item.name,
+            country: item.country,
+            id: item.id || `${item.name}-${item.country}`
+          }));
+          setLocations(transformedLocations);
+        }
+      } else {
+        setLocations([]);
+      }
+    } catch (err) {
+      setError("Failed to fetch locations");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTextDebounce = useCallback(debounce(handleSearch, 1200), []);
+
+  if (loading && !weatherData) {
+    return (
+        <View className="flex-1 justify-center items-center bg-blue-200">
+          <ActivityIndicator size="large" color="#4A90E2" />
+        </View>
+    );
+  }
 
   return (
       <View className="flex-1 relative">
