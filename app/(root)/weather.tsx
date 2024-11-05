@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   View,
   Animated,
+  RefreshControl,
   ActivityIndicator,
   Image,
 } from "react-native";
@@ -29,6 +30,7 @@ export default function WeatherScreen() {
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
 
   useEffect(() => {
     loadSavedData();
@@ -96,6 +98,23 @@ export default function WeatherScreen() {
       setLoading(false);
     }
   };
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const savedLocation = await getData(LAST_LOCATION_KEY);
+      if (savedLocation) {
+        await handleLocationSelect(JSON.parse(savedLocation));
+      } else {
+        await handleLocationSelect({ name: "London", country: "UK", id: "default" });
+      }
+    } catch (err) {
+      console.error('Error refreshing:', err);
+      setError("Failed to refresh weather data");
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
 
   const handleSearch = async (value: string) => {
     try {
@@ -191,6 +210,14 @@ export default function WeatherScreen() {
               <ScrollView
                   className="mx-4 flex-1"
                   showsVerticalScrollIndicator={false}
+                  refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        tintColor="#4A90E2"
+                        colors={["#4A90E2"]}
+                    />
+                  }
               >
                 {/* Location and Time */}
                 <View className="mt-4 flex flex-row items-start">
