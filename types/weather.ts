@@ -74,7 +74,7 @@ export interface WeatherIconProps {
 }
 
 
-export interface Location {
+export interface LocationType {
   name: string;
   country: string;
   id: string;
