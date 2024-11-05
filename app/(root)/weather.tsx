@@ -197,9 +197,3 @@ export default function WeatherScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  searchIcon: {
-    backgroundColor: "grey",
-  },
-});
