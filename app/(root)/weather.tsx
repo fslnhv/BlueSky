@@ -20,7 +20,7 @@ import { weatherCodeToIcon, getDayOfWeek } from "@/utils/weatherUtils";
 
 export default function WeatherScreen() {
   const [toggleSearch, setToggleSearch] = useState<boolean>(false);
-  const [locations, setLocations] = useState<Location[]>([]);
+  const [locations, setLocations] = useState<LocationType[]>([]);
   const [weatherCondition, setWeatherCondition] = useState<WeatherIconName>("day-cloudy");
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
@@ -31,6 +31,7 @@ export default function WeatherScreen() {
   }, []);
 
   const handleLocationSelect = async (location: Location) => {
+  const handleLocationSelect = async (location: LocationType) => {
     try {
       setLoading(true);
       setError(null);
