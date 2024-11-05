@@ -17,6 +17,10 @@ import ScrollView = Animated.ScrollView;
 import { debounce } from 'lodash';
 import { fetchLocation, fetchWeatherForecast } from "@/app/(api)/weatherApi";
 import { weatherCodeToIcon, getDayOfWeek } from "@/utils/weatherUtils";
+import {getData, storeData} from "@/utils/asyncStorage";
+
+const LAST_LOCATION_KEY = 'lastLocation';
+const WEATHER_DATA_KEY = 'weatherData';
 
 export default function WeatherScreen() {
   const [toggleSearch, setToggleSearch] = useState<boolean>(false);
@@ -27,10 +31,45 @@ export default function WeatherScreen() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    handleLocationSelect({ name: "London", country: "UK", id: "default" });
+    loadSavedData();
   }, []);
 
-  const handleLocationSelect = async (location: Location) => {
+  const loadSavedData = async () => {
+    try {
+      const savedLocation = await getData(LAST_LOCATION_KEY);
+      const savedWeatherData = await getData(WEATHER_DATA_KEY);
+
+      if (savedWeatherData) {
+        const parsedWeatherData = JSON.parse(savedWeatherData);
+        setWeatherData(parsedWeatherData);
+        setWeatherCondition(weatherCodeToIcon(parsedWeatherData.current.condition.code));
+      }
+
+      if (savedLocation) {
+        const parsedLocation = JSON.parse(savedLocation);
+        // Only fetch new data if we don't have saved weather data or it's old
+        if (!savedWeatherData || isDataStale(JSON.parse(savedWeatherData))) {
+          await handleLocationSelect(parsedLocation);
+        }
+      } else {
+        // Default to London if no saved location
+        await handleLocationSelect({name: "London", country: "UK", id: "default"});
+      }
+    } catch (err) {
+      console.error('Error loading saved data:', err);
+      // Fall back to London if there's an error
+      await handleLocationSelect({name: "London", country: "UK", id: "default"});
+    }
+  };
+
+  const isDataStale = (data: WeatherData): boolean => {
+    if (!data.current.last_updated) return true;
+    const lastUpdate = new Date(data.current.last_updated).getTime();
+    const now = new Date().getTime();
+    const thirtyMinutes = 30 * 60 * 1000;
+    return now - lastUpdate > thirtyMinutes;
+  };
+
   const handleLocationSelect = async (location: LocationType) => {
     try {
       setLoading(true);
@@ -45,6 +84,10 @@ export default function WeatherScreen() {
       if (weather) {
         setWeatherData(weather);
         setWeatherCondition(weatherCodeToIcon(weather.current.condition.code));
+
+        // Save to AsyncStorage
+        await storeData(LAST_LOCATION_KEY, JSON.stringify(location));
+        await storeData(WEATHER_DATA_KEY, JSON.stringify(weather));
       }
     } catch (err) {
       setError("Failed to fetch weather data");
