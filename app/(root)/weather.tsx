@@ -7,10 +7,11 @@ import {
   Animated,
   RefreshControl,
   ActivityIndicator,
-  Image,
+  Image, Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
+
 import { useCallback, useState, useEffect } from "react";
 import {WeatherIconName, WeatherData, LocationType} from "@/types/weather";
 import WeatherIcon from "@/components/WeatherIcon";
@@ -19,9 +20,11 @@ import { debounce } from 'lodash';
 import { fetchLocation, fetchWeatherForecast } from "@/app/(api)/weatherApi";
 import { weatherCodeToIcon, getDayOfWeek } from "@/utils/weatherUtils";
 import {getData, storeData} from "@/utils/asyncStorage";
+import * as Location from 'expo-location';
 
 const LAST_LOCATION_KEY = 'lastLocation';
 const WEATHER_DATA_KEY = 'weatherData';
+const LOCATION_PERMISSION_KEY = 'locationPermissionAsked';
 
 export default function WeatherScreen() {
   const [toggleSearch, setToggleSearch] = useState<boolean>(false);
@@ -31,38 +34,64 @@ export default function WeatherScreen() {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [userLocation, setUserLocation] = useState<any>()
 
   useEffect(() => {
-    loadSavedData();
+    requestLocationAndInitialize();
   }, []);
 
-  const loadSavedData = async () => {
+  const requestLocationAndInitialize = async () => {
     try {
-      const savedLocation = await getData(LAST_LOCATION_KEY);
-      const savedWeatherData = await getData(WEATHER_DATA_KEY);
+      setLoading(true);
+      setError(null);
 
-      if (savedWeatherData) {
-        const parsedWeatherData = JSON.parse(savedWeatherData);
-        setWeatherData(parsedWeatherData);
-        setWeatherCondition(weatherCodeToIcon(parsedWeatherData.current.condition.code));
-      }
+      const { status } = await Location.requestForegroundPermissionsAsync();
 
-      if (savedLocation) {
-        const parsedLocation = JSON.parse(savedLocation);
-        // Only fetch new data if we don't have saved weather data or it's old
-        if (!savedWeatherData || isDataStale(JSON.parse(savedWeatherData))) {
-          await handleLocationSelect(parsedLocation);
+      if (status === 'granted') {
+
+        const location = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.High // This is sufficient for weather data
+        });
+
+
+        const weather = await fetchWeatherForecast({
+          cityName: `${location.coords.latitude},${location.coords.longitude}`
+        });
+
+        if (weather) {
+          const currentLocation: LocationType = {
+            name: weather.location.name,
+            country: weather.location.country,
+            id: `${weather.location.name}-${weather.location.country}`,
+          };
+
+          setWeatherData(weather);
+          setWeatherCondition(weatherCodeToIcon(weather.current.condition.code));
+
+          // Save to AsyncStorage
+          await storeData(LAST_LOCATION_KEY, JSON.stringify(currentLocation));
+          await storeData(WEATHER_DATA_KEY, JSON.stringify(weather));
+          await storeData(LOCATION_PERMISSION_KEY, 'true');
         }
       } else {
-        // Default to London if no saved location
-        await handleLocationSelect({name: "London", country: "UK", id: "default"});
+
+        console.log('Location permission denied');
+        Alert.alert(
+            "Location Access Denied",
+            "We'll show you the weather for Dar es Salaam instead. You can always search for your city manually.",
+            [{ text: "OK" }]
+        );
+        await handleLocationSelect({name: "Dar es Salaam", country: "Tanzania", id: "default"});
       }
     } catch (err) {
-      console.error('Error loading saved data:', err);
-      // Fall back to London if there's an error
+      console.error('Error getting location:', err);
+      setError("Unable to get location. Showing default city.");
       await handleLocationSelect({name: "London", country: "UK", id: "default"});
+    } finally {
+      setLoading(false);
     }
   };
+
 
   const isDataStale = (data: WeatherData): boolean => {
     if (!data.current.last_updated) return true;

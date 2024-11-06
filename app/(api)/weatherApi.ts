@@ -23,7 +23,6 @@ const apiCall = async (endpoint: string) => {
         const response = await axios.request(options);
         return response.data;
     } catch (error) {
-        // Enhanced error logging
         if (axios.isAxiosError(error)) {
             console.log('API Error:', {
                 message: error.message,
@@ -37,9 +36,8 @@ const apiCall = async (endpoint: string) => {
     }
 };
 
-// Make sure to properly export these functions
 export const fetchWeatherForecast = async (params: WeatherParams) => {
-    // Set a default value for days if not provided
+
     const daysParam = {
         ...params,
         days: params.days || 7
@@ -51,7 +49,6 @@ export const fetchLocation = async (params: Pick<WeatherParams, 'cityName'>) => 
     return apiCall(getLocationEndpoint(params));
 };
 
-// You can also export a default object if needed
 const weatherApi = {
     fetchWeatherForecast,
     fetchLocation
