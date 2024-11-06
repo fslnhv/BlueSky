@@ -31,7 +31,12 @@
     ], [
       "expo-location",
       {
-        "locationAlwaysAndWhenInUsePermission": "Allow BlueSky to use your location."
+        "locationAlwaysAndWhenInUsePermission": "Allow BlueSky to use your location.",
+        "locationAlwaysPermission": "Allow BlueSky to use your location",
+        "locationWhenInUsePermission": "Allow BlueSky to use your location",
+        "isIosBackgroundLocationEnabled": false,
+        "isAndroidBackgroundLocationEnabled": false,
+        "isAndroidForegroundServiceEnabled": ""
       }
     ]],
     "experiments": {
