@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import {GoogleGenerativeAI} from "@google/generative-ai";
 
 if (!process.env.EXPO_PUBLIC_GEMINI_API_KEY) {
     throw new Error("Missing Gemini API key in environment variables");
@@ -13,10 +13,10 @@ const model = genAI.getGenerativeModel({
 });
 
 const generationConfig = {
-    temperature: 0.6,
+    temperature: 0.9,
     topP: 0.9,
-    topK: 30,
-    maxOutputTokens: 18,
+    topK: 40,
+    maxOutputTokens: 24,
     responseMimeType: "text/plain",
 };
 
@@ -35,7 +35,8 @@ export const getAISuggestions2 = async (params: AIPromptParams): Promise<string[
 
 
     try {
-        const prompt = `It's ${params.timeOfDay} in ${params.location}, where the temperature is ${params.weather.temp_c}°C with ${params.weather.condition.toLowerCase()}. Provide one concise and practical suggestions (4-7 words) on what to wear, activities to consider, or warnings if needed and nothing else.`;
+        const prompt = `You are a kind assistant who suggests to the user what to wear or do depending on the 
+        weather, location and time of day. It's ${params.timeOfDay} in ${params.location}, where the temperature is ${params.weather.temp_c}°C with ${params.weather.condition.toLowerCase()}. Provide one practical suggestion (5-10 words) on what to wear or activities to consider or warnings if needed .Be kind and gentle when suggesting.`;
 
         // Start a chat session with the model
         const chatSession = model.startChat({
@@ -53,9 +54,7 @@ export const getAISuggestions2 = async (params: AIPromptParams): Promise<string[
         }
 
         // Process and return the suggestions
-        const suggestions = result.response.text().split("\n").map((suggestion: string) => suggestion.trim());
-        console.log(suggestions);
-        return suggestions;
+        return result.response.text().split("\n").map((suggestion: string) => suggestion.trim());
     } catch (error) {
         console.error("Error getting AI suggestions:", error);
         return [];
