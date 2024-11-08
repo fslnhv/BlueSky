@@ -311,15 +311,15 @@ export default function WeatherScreen() {
                   }
               >
                 {/* Location and Time */}
-                <View className="mt-4 ml-4 flex flex-row items-start">
+                <View className="mt-4 ml-4 mb-2 flex flex-row items-start">
                   <View className="mr-8">
                     <Text className="text-4xl font-bold text-blue-950">
                       {weatherData.location.name}
                     </Text>
-                    <Text className="text-lg text-gray-600">
+                    <Text className="text-lg font-semibold text-gray-600">
                       {weatherData.location.region}, {weatherData.location.country}
                     </Text>
-                    <Text className="text-sm text-gray-500 mt-2">
+                    <Text className="text-sm text-gray-500 mt-1">
                       Last updated: {weatherData.current.last_updated}
                     </Text>
                   </View>
