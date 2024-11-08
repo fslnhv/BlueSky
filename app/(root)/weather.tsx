@@ -326,23 +326,24 @@ export default function WeatherScreen() {
                 </View>
 
                 {/* Current Weather */}
-                <View className="flex flex-row mt-6 justify-around">
+                <View>
                   <Text className="text-blue-950 font-semibold text-xl ml-4 mb-2  ">
                     Now
                   </Text>
-                  <View className="">
-                    <View className="static">
-                      <Text className="text-8xl font-bold text-blue-950 mt-4 mr-10">
-                        {Math.round(weatherData.current.temp_c)}°
-                      </Text>
-                      <View className="absolute bottom-0 right-0">
-                        {weatherData.current.condition.icon && (
-                            <Image
-                                source={{ uri: `https:${weatherData.current.condition.icon}` }}
-                                className="h-24 w-24"
-                            />
-                        )}
-                      </View>
+                  <View className="flex flex-row  justify-between mx-4">
+                    <View className="">
+                      <View className="static">
+                        <Text className="text-9xl font-bold text-blue-950 mt-4 mr-10">
+                          {Math.round(weatherData.current.temp_c)}°
+                        </Text>
+                        <View className="absolute bottom-0 right-0">
+                          {weatherData.current.condition.icon && (
+                              <Image
+                                  source={{ uri: `https:${weatherData.current.condition.icon}` }}
+                                  className="h-24 w-24"
+                              />
+                          )}
+                        </View>
 
                     </View>
                   </View>
@@ -355,6 +356,19 @@ export default function WeatherScreen() {
                     </Text>
                   </View>
                 </View>
+                      </View>
+                    </View>
+                    <View className="items-end">
+                      <Text className="text-l  text-blue-950 font-semibold mt-2 capitalize">
+                        {weatherData.current.condition.text}
+                      </Text>
+                      <Text className="text-gray-500 text-md font-semibold mt-1">
+                        Feels like {Math.round(weatherData.current.feelslike_c)}°C
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
                 {/*AI suggestion*/}
                 <View className="mt-4 ml-2">
                   <Text className="text-blue-950 font-semibold ml-1  ">
