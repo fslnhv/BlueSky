@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^14.0.2",
+    "@google/generative-ai": "^0.21.0",
     "@heroicons/react": "^2.1.5",
     "@react-native-async-storage/async-storage": "^1.24.0",
     "@react-navigation/native": "^6.0.2",
@@ -33,6 +34,7 @@
     "expo-web-browser": "~13.0.3",
     "lodash": "^4.17.21",
     "nativewind": "^4.1.21",
+    "openai": "^4.71.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-native": "0.74.5",
