@@ -128,13 +128,13 @@ export default function WeatherScreen() {
   };
 
 
-  const isDataStale = (data: WeatherData): boolean => {
-    if (!data.current.last_updated) return true;
-    const lastUpdate = new Date(data.current.last_updated).getTime();
-    const now = new Date().getTime();
-    const thirtyMinutes = 30 * 60 * 1000;
-    return now - lastUpdate > thirtyMinutes;
-  };
+  // const isDataStale = (data: WeatherData): boolean => {
+  //   if (!data.current.last_updated) return true;
+  //   const lastUpdate = new Date(data.current.last_updated).getTime();
+  //   const now = new Date().getTime();
+  //   const thirtyMinutes = 30 * 60 * 1000;
+  //   return now - lastUpdate > thirtyMinutes;
+  // };
 
   const handleLocationSelect = async (location: LocationType) => {
     try {
