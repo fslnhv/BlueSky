@@ -221,6 +221,20 @@ export default function WeatherScreen() {
 
   const handleTextDebounce = useCallback(debounce(handleSearch, 1200), []);
 
+
+  const getHourFromTime = (time: string) => {
+    const date = new Date(time);
+    return date.getHours().toString().padStart(2, '0') + ':00';
+  };
+
+  const filterHourlyForecast = (forecastDay: ForecastDay) => {
+    const currentHour = new Date().getHours();
+    return forecastDay.hour?.filter((hour) => {
+      const hourTime = new Date(hour.time).getHours();
+      return hourTime >= currentHour;
+    }) || [];
+  };
+
   if (loading && !weatherData) {
     return (
         <View className="flex-1 justify-center items-center bg-blue-200">
