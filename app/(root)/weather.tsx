@@ -415,33 +415,62 @@ export default function WeatherScreen() {
                       <Text className="text-blue-950 font-semibold ml-4 mb-2">
                         7-Day Forecast
                       </Text>
-                      <ScrollView
-                          horizontal
-                          showsHorizontalScrollIndicator={false}
-                          className="px-2"
-                      >
+                      <View className="mx-2">
                         {weatherData.forecast.forecastday.map((day, index) => (
                             <View
                                 key={day.date}
-                                className="items-center bg-white/30 rounded-2xl py-3 px-3 mr-4"
+                                className={`
+            flex-row justify-between items-center bg-white/30 px-4 py-3 mb-1
+            ${index === 0 ? 'rounded-t-2xl' : ''}
+            ${index === weatherData.forecast.forecastday.length - 1 ? 'rounded-b-2xl' : ''}
+            ${index !== weatherData.forecast.forecastday.length - 1 ? 'border-b border-white/20' : ''}
+          `}
                             >
+                              {/* Day */}
+                              <View className="flex-1">
+                                <Text className="text-blue-950 font-medium">
+                                  {index === 0 ? 'Today' : getDayOfWeek(day.date)}
+                                </Text>
+                              </View>
 
-                              {day.day.condition.icon && (
-                                  <Image
-                                      source={{ uri: `https:${day.day.condition.icon}` }}
-                                      className=""
-                                      style={{ width: 72, height: 72 }} // Explicit dimensions for Image
+                              {/* Weather Icon */}
+                              <View className="flex-row items-center flex-1 justify-center">
+                                {day.day.condition.icon && (
+                                    <Image
+                                        source={{ uri: `https:${day.day.condition.icon}` }}
+                                        style={{ width: 40, height: 40 }}
+                                    />
+                                )}
+                              </View>
+
+                              {/* Temperature and additional info */}
+                              <View className="flex-1 items-end">
+                                <View className="flex-row items-center">
+                                  <Text className="text-blue-950 font-semibold">
+                                    {Math.round(day.day.maxtemp_c)}°
+                                  </Text>
+                                  <Text className="text-blue-950 font-semibold">
+                                    /
+                                  </Text>
+                                  <Text className="text-gray-600 ml-1">
+                                    {Math.round(day.day.mintemp_c)}°
+                                  </Text>
+                                </View>
+                                <View className="flex-row items-center mt-1">
+                                  <FontAwesome6
+                                      name="droplet"
+                                      size={12}
+                                      color="#4A90E2"
+                                      className="mr-1"
                                   />
-                              )}
-                              <Text className="text-blue-950 font-medium  mb-1">
-                                {index === 0 ? 'Today' : getDayOfWeek(day.date)}
-                              </Text>
-                              <Text className="text-blue-950 font-semibold">
-                                {Math.round(day.day.avgtemp_c)}°
-                              </Text>
+                                  <Text className="text-gray-600 text-sm">
+                                    {day.day.daily_chance_of_rain}%
+                                  </Text>
+                                </View>
+                              </View>
                             </View>
                         ))}
-                      </ScrollView>
+                      </View>
                     </View>
                 )}
 
