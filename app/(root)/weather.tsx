@@ -13,7 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 
 import { useCallback, useState, useEffect } from "react";
-import {WeatherIconName, WeatherData, LocationType} from "@/types/weather";
+import {WeatherIconName, WeatherData, LocationType, ForecastDay} from "@/types/weather";
 import WeatherIcon from "@/components/WeatherIcon";
 import ScrollView = Animated.ScrollView;
 import { debounce } from 'lodash';
@@ -21,6 +21,7 @@ import { fetchLocation, fetchWeatherForecast } from "@/app/(api)/weatherApi";
 import { weatherCodeToIcon, getDayOfWeek } from "@/utils/weatherUtils";
 import {getData, storeData} from "@/utils/asyncStorage";
 import * as Location from 'expo-location';
+import {getAISuggestions2} from "@/app/(api)/geminiApi";
 
 const LAST_LOCATION_KEY = 'lastLocation';
 const WEATHER_DATA_KEY = 'weatherData';
@@ -35,10 +36,32 @@ export default function WeatherScreen() {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [userLocation, setUserLocation] = useState<any>()
+  const [aiSuggestions, setAISuggestions] = useState<string[]>([]);
+  const [timeOfDay, setTimeOfDay] = useState<string | null>(null);
 
   useEffect(() => {
-    requestLocationAndInitialize();
+    const determineTimeOfDay = () => {
+      const hours = new Date().getHours();
+
+      if (hours >= 5 && hours < 12) return "morning";
+      if (hours >= 12 && hours < 17) return "afternoon";
+      if (hours >= 17 && hours < 21) return "evening";
+      return "night";
+    };
+
+    setTimeOfDay(determineTimeOfDay());
   }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        await requestLocationAndInitialize();
+      } catch (error) {
+        console.error("Error initializing location:", error);
+      }
+    })();
+  }, []);
+
 
   const requestLocationAndInitialize = async () => {
     try {
@@ -72,7 +95,19 @@ export default function WeatherScreen() {
           await storeData(LAST_LOCATION_KEY, JSON.stringify(currentLocation));
           await storeData(WEATHER_DATA_KEY, JSON.stringify(weather));
           await storeData(LOCATION_PERMISSION_KEY, 'true');
+
+          //Get AI suggestions
+          const suggestions = await getAISuggestions2({
+            location: `${currentLocation.name}, ${currentLocation.country}`,
+            weather: {
+              temp_c: weather.current.temp_c,
+              condition: weather.current.condition.text,
+            },
+            timeOfDay: timeOfDay || 'day',
+          });
+          setAISuggestions(suggestions);
         }
+
       } else {
 
         console.log('Location permission denied');
@@ -93,13 +128,13 @@ export default function WeatherScreen() {
   };
 
 
-  const isDataStale = (data: WeatherData): boolean => {
-    if (!data.current.last_updated) return true;
-    const lastUpdate = new Date(data.current.last_updated).getTime();
-    const now = new Date().getTime();
-    const thirtyMinutes = 30 * 60 * 1000;
-    return now - lastUpdate > thirtyMinutes;
-  };
+  // const isDataStale = (data: WeatherData): boolean => {
+  //   if (!data.current.last_updated) return true;
+  //   const lastUpdate = new Date(data.current.last_updated).getTime();
+  //   const now = new Date().getTime();
+  //   const thirtyMinutes = 30 * 60 * 1000;
+  //   return now - lastUpdate > thirtyMinutes;
+  // };
 
   const handleLocationSelect = async (location: LocationType) => {
     try {
@@ -119,6 +154,19 @@ export default function WeatherScreen() {
         // Save to AsyncStorage
         await storeData(LAST_LOCATION_KEY, JSON.stringify(location));
         await storeData(WEATHER_DATA_KEY, JSON.stringify(weather));
+
+        // Get AI suggestions
+        const suggestions = await getAISuggestions2({
+          location: `${location.name}, ${location.country}`,
+          weather: {
+            temp_c: weather.current.temp_c,
+            condition: weather.current.condition.text,
+          },
+          timeOfDay: timeOfDay || 'day',
+        });
+        setAISuggestions(suggestions);
+        console.log('the suggestion', suggestions)
+
       }
     } catch (err) {
       setError("Failed to fetch weather data");
@@ -173,6 +221,20 @@ export default function WeatherScreen() {
 
   const handleTextDebounce = useCallback(debounce(handleSearch, 1200), []);
 
+
+  const getHourFromTime = (time: string) => {
+    const date = new Date(time);
+    return date.getHours().toString().padStart(2, '0') + ':00';
+  };
+
+  const filterHourlyForecast = (forecastDay: ForecastDay) => {
+    const currentHour = new Date().getHours();
+    return forecastDay.hour?.filter((hour) => {
+      const hourTime = new Date(hour.time).getHours();
+      return hourTime >= currentHour;
+    }) || [];
+  };
+
   if (loading && !weatherData) {
     return (
         <View className="flex-1 justify-center items-center bg-blue-200">
@@ -189,7 +251,7 @@ export default function WeatherScreen() {
           <View className="mx-4 relative z-50">
             <View
                 className={`flex-row justify-end items-center rounded-full ${
-                    toggleSearch ? 'bg-gray-700' : 'bg-transparent'
+                    toggleSearch ? 'bg-blue-800' : 'bg-transparent'
                 }`}
             >
               {toggleSearch ? (
@@ -202,7 +264,7 @@ export default function WeatherScreen() {
               ) : null}
 
               <TouchableOpacity
-                  className="rounded-full p-3 m-1 bg-gray-700"
+                  className="rounded-full p-3 m-1 bg-blue-900"
                   onPress={() => setToggleSearch(!toggleSearch)}
               >
                 <FontAwesome6
@@ -215,7 +277,7 @@ export default function WeatherScreen() {
 
             {/* Search Results */}
             {locations.length > 0 && toggleSearch ? (
-                <View className="absolute w-full bg-white top-16 rounded-3xl">
+                <View className="absolute w-full bg-white top-16 rounded-2xl">
                   {locations.map((loc, index) => (
                       <TouchableOpacity
                           key={loc.id}
@@ -225,7 +287,7 @@ export default function WeatherScreen() {
                           }`}
                       >
                         <FontAwesome6 name="location-dot" size={24} color="gray" />
-                        <Text className="ml-3 text-gray-800">
+                        <Text className="ml-3 text-blue-950">
                           {loc.name}, {loc.country}
                         </Text>
                       </TouchableOpacity>
@@ -249,144 +311,338 @@ export default function WeatherScreen() {
                   }
               >
                 {/* Location and Time */}
-                <View className="mt-4 flex flex-row items-start">
+                <View className="mt-4 ml-4 mb-2 flex flex-row items-start">
                   <View className="mr-8">
-                    <Text className="text-4xl font-bold text-gray-800">
+                    <Text className="text-4xl font-bold text-blue-950">
                       {weatherData.location.name}
                     </Text>
-                    <Text className="text-lg text-gray-600">
+                    <Text className="text-lg font-semibold text-gray-600">
                       {weatherData.location.region}, {weatherData.location.country}
                     </Text>
-                    <Text className="text-sm text-gray-500 mt-2">
+                    <Text className="text-sm text-gray-500 mt-1">
                       Last updated: {weatherData.current.last_updated}
                     </Text>
                   </View>
                 </View>
 
                 {/* Current Weather */}
-                <View className="flex flex-row mt-6 justify-around">
-                  <View className="">
-                    <View className="static">
-                      <Text className="text-8xl font-bold text-gray-800 mt-4 mr-10">
-                        {Math.round(weatherData.current.temp_c)}°
-                      </Text>
-                      <View className="absolute bottom-0 right-0">
-                        {weatherData.current.condition.icon && (
-                            <Image
-                                source={{ uri: `https:${weatherData.current.condition.icon}` }}
-                                className="h-24 w-24"
-                            />
-                        )}
-                      </View>
+                <View>
+                  <Text className="text-blue-950 font-semibold text-xl ml-4 mb-2  ">
+                    Now
+                  </Text>
+                  <View className="flex flex-row  justify-between mx-4">
+                    <View className="">
+                      <View className="static">
+                        <Text className="text-9xl font-bold text-blue-950 mt-4 mr-10">
+                          {Math.round(weatherData.current.temp_c)}°
+                        </Text>
+                        <View className="absolute bottom-0 right-0">
+                          {weatherData.current.condition.icon && (
+                              <Image
+                                  source={{ uri: `https:${weatherData.current.condition.icon}` }}
+                                  className="h-24 w-24"
+                              />
+                          )}
+                        </View>
 
+                      </View>
+                    </View>
+                    <View className="items-end">
+                      <Text className="text-l  text-blue-950 font-semibold mt-2 capitalize">
+                        {weatherData.current.condition.text}
+                      </Text>
+                      <Text className="text-gray-500 text-md font-semibold mt-1">
+                        Feels like {Math.round(weatherData.current.feelslike_c)}°C
+                      </Text>
                     </View>
                   </View>
-                  <View>
-                    <Text className="text-xl text-gray-600 mt-2 capitalize">
-                      {weatherData.current.condition.text}
-                    </Text>
-                    <Text className="text-gray-500 mt-1">
-                      Feels like {Math.round(weatherData.current.feelslike_c)}°C
+                </View>
+
+                {/*AI suggestion*/}
+                <View className="mt-4 ml-2">
+                  <Text className="text-blue-950 font-semibold ml-1  ">
+                    BlueSky AI suggestion
+                  </Text>
+                  <View className=" bg-white/30 rounded-2xl p-4 mt-2 mb-2 ">
+                    <Text className="text-blue-950 font-medium ">
+                      {aiSuggestions}
                     </Text>
                   </View>
                 </View>
 
-                {/* Forecast Section */}
-                {weatherData.forecast && (
-                    <View className="mt-6 mb-6">
-                      <Text className="text-gray-800 font-semibold ml-4 mb-2">
-                        7-Day Forecast
+                {/*Hourly Forecast*/}
+                {weatherData.forecast && weatherData.forecast.forecastday[0].hour && (
+                    <View className="mt-6">
+                      <Text className="text-blue-950 font-semibold ml-4 mb-2">
+                        Hourly Forecast
                       </Text>
                       <ScrollView
                           horizontal
                           showsHorizontalScrollIndicator={false}
-                          className="px-2"
+                          className="p-2 bg-white/30 rounded-2xl"
                       >
-                        {weatherData.forecast.forecastday.map((day, index) => (
-                            <View
-                                key={day.date}
-                                className="items-center bg-white/30 rounded-3xl py-3 px-3 mr-4"
-                            >
+                        {[
+                          ...filterHourlyForecast(weatherData.forecast.forecastday[0]),
+                          ...(weatherData.forecast.forecastday[1]?.hour || [])
+                        ]
+                            .slice(0, 24)
+                            .map((hour, index) => (
+                                <View
+                                    key={hour.time}
+                                    className="items-center rounded-2xl py-2 px-2 mr-4"
+                                >
+                                  <Text className="text-blue-950 font-semibold">
+                                    {Math.round(hour.temp_c)}°
+                                  </Text>
+                                  {hour.condition.icon && (
+                                      <Image
+                                          source={{ uri: `https:${hour.condition.icon}` }}
+                                          className=""
+                                          style={{ width: 62, height: 64 }}
+                                      />
+                                  )}
 
-                              {day.day.condition.icon && (
-                                  <Image
-                                      source={{ uri: `https:${day.day.condition.icon}` }}
-                                      className=""
-                                      style={{ width: 72, height: 72 }} // Explicit dimensions for Image
-                                  />
-                              )}
-                              <Text className="text-gray-800 font-medium  mb-1">
-                                {index === 0 ? 'Today' : getDayOfWeek(day.date)}
-                              </Text>
-                              <Text className="text-gray-800 font-semibold">
-                                {Math.round(day.day.avgtemp_c)}°
-                              </Text>
-                            </View>
-                        ))}
+                                  <Text className="text-blue-950 font-medium mb-1">
+                                    {index === 0 ? 'Now' : getHourFromTime(hour.time)}
+                                  </Text>
+                                </View>
+                            ))}
                       </ScrollView>
                     </View>
                 )}
 
-                {/* Detailed Stats */}
-                <View className="bg-white/30 rounded-3xl p-4 mt-4 mb-4">
-                  <View className="flex-row justify-between flex-wrap">
-                    <View className="w-1/2 p-2">
-                      <View className="flex-row items-center">
-                        <WeatherIcon name="windy" size={20} color="#666" />
-                        <Text className="ml-2 text-gray-600">Wind</Text>
-                      </View>
-                      <Text className="text-gray-800 font-semibold mt-1">
-                        {weatherData.current.wind_kph} km/h {weatherData.current.wind_dir}
+
+                {/* Forecast Section */}
+                {weatherData.forecast && (
+                    <View className="mt-6 mb-6">
+                      <Text className="text-blue-950 font-semibold ml-4 mb-2">
+                        7-Day Forecast
                       </Text>
+                      <View className="mx-2">
+                        {weatherData.forecast.forecastday.map((day, index) => (
+                            <View
+                                key={day.date}
+                                className={`
+            flex-row justify-between items-center bg-white/30 px-4 py-3 mb-1
+            ${index === 0 ? 'rounded-t-2xl' : ''}
+            ${index === weatherData.forecast.forecastday.length - 1 ? 'rounded-b-2xl' : ''}
+            ${index !== weatherData.forecast.forecastday.length - 1 ? 'border-b border-white/20' : ''}
+          `}
+                            >
+                              {/* Day */}
+                              <View className="flex-1">
+                                <Text className="text-blue-950 font-medium">
+                                  {index === 0 ? 'Today' : getDayOfWeek(day.date)}
+                                </Text>
+                              </View>
+
+                              {/* Weather Icon */}
+                              <View className="flex-row items-center flex-1 justify-center">
+                                {day.day.condition.icon && (
+                                    <Image
+                                        source={{ uri: `https:${day.day.condition.icon}` }}
+                                        style={{ width: 40, height: 40 }}
+                                    />
+                                )}
+                              </View>
+
+                              {/* Temperature and additional info */}
+                              <View className="flex-1 items-end">
+                                <View className="flex-row items-center">
+                                  <Text className="text-blue-950 font-semibold">
+                                    {Math.round(day.day.maxtemp_c)}°
+                                  </Text>
+                                  <Text className="text-blue-950 font-semibold">
+                                    /
+                                  </Text>
+                                  <Text className="text-gray-600 ml-1">
+                                    {Math.round(day.day.mintemp_c)}°
+                                  </Text>
+                                </View>
+                                <View className="flex-row items-center mt-1">
+                                  <FontAwesome6
+                                      name="droplet"
+                                      size={12}
+                                      color="#4A90E2"
+                                      className="mr-1"
+                                  />
+                                  <Text className="text-gray-600 text-sm">
+                                    {day.day.daily_chance_of_rain}%
+                                  </Text>
+                                </View>
+                              </View>
+                            </View>
+                        ))}
+                      </View>
                     </View>
-                    <View className="w-1/2 p-2">
-                      <View className="flex-row items-center">
-                        <WeatherIcon name="day-rain" size={20} color="#666" />
-                        <Text className="ml-2 text-gray-600">Humidity</Text>
+                )}
+
+                {/* Current Stats */}
+                <View className="mb-6">
+                  <Text className="text-blue-950 font-semibold ml-4 mb-2">
+                    Current Conditions
+                  </Text>
+
+                  <View className="mx-2">
+                    {/* Main Grid Container */}
+                    <View className="flex-row flex-wrap">
+                      {/* Temperature Card - Full Width */}
+                      <View className="w-full p-2">
+                        <View className="bg-white/30 rounded-2xl p-4">
+                          <View className="flex-row justify-between items-center">
+                            <View className="flex-row items-center">
+                              <FontAwesome6 name="temperature-half" size={20} color="#666" />
+                              <Text className="ml-2 text-blue-950 font-medium">Temperature</Text>
+                            </View>
+                            <Text className="text-blue-950 text-2xl font-semibold">
+                              {weatherData.current.temp_c}°C
+                            </Text>
+                          </View>
+                          <View className="flex-row justify-between mt-4">
+                            <View className="items-center">
+                              <Text className="text-blue-950">Feels Like</Text>
+                              <Text className="text-gray-900 font-semibold mt-1">
+                                {weatherData.current.feelslike_c}°C
+                              </Text>
+                            </View>
+                            <View className="items-center">
+                              <Text className="text-blue-950">Heat Index</Text>
+                              <Text className="text-gray-900 font-semibold mt-1">
+                                {weatherData.current.heatindex_c}°C
+                              </Text>
+                            </View>
+                            <View className="items-center">
+                              <Text className="text-blue-950">Wind Chill</Text>
+                              <Text className="text-gray-900 font-semibold mt-1">
+                                {weatherData.current.windchill_c}°C
+                              </Text>
+                            </View>
+                          </View>
+                        </View>
                       </View>
-                      <Text className="text-gray-800 font-semibold mt-1">
-                        {weatherData.current.humidity}%
-                      </Text>
-                    </View>
-                    <View className="w-1/2 p-2">
-                      <View className="flex-row items-center">
-                        <FontAwesome6 name="eye" size={20} color="#666" />
-                        <Text className="ml-2 text-gray-600">Visibility</Text>
+
+                      {/* Wind Card - Full Width */}
+                      <View className="w-full p-2">
+                        <View className="bg-white/30 rounded-2xl p-4">
+                          <View className="flex-row justify-between items-center">
+                            <View className="flex-row items-center">
+                              <WeatherIcon name="windy" size={20} color="#666" />
+                              <Text className="ml-2 text-blue-950 font-medium">Wind</Text>
+                            </View>
+                            <Text className="text-blue-950 text-2xl font-semibold">
+                              {weatherData.current.wind_kph} km/h
+                            </Text>
+                          </View>
+                          <View className="flex-row justify-between mt-4">
+                            <View className="items-center">
+                              <Text className="text-blue-950">Direction</Text>
+                              <Text className="text-gray-900 font-semibold mt-1">
+                                {weatherData.current.wind_dir}
+                              </Text>
+                            </View>
+                            <View className="items-center">
+                              <Text className="text-blue-950">Degree</Text>
+                              <Text className="text-gray-900 font-semibold mt-1">
+                                {weatherData.current.wind_degree}°
+                              </Text>
+                            </View>
+                            <View className="items-center">
+                              <Text className="text-blue-950">Gust</Text>
+                              <Text className="text-gray-900 font-semibold mt-1">
+                                {weatherData.current.gust_kph} km/h
+                              </Text>
+                            </View>
+                          </View>
+                        </View>
                       </View>
-                      <Text className="text-gray-800 font-semibold mt-1">
-                        {weatherData.current.vis_km} km
-                      </Text>
-                    </View>
-                    <View className="w-1/2 p-2">
-                      <View className="flex-row items-center">
-                        <FontAwesome6 name="gauge-high" size={20} color="#666" />
-                        <Text className="ml-2 text-gray-600">Pressure</Text>
+
+                      {/* 2x2 Grid for Medium-sized Cards */}
+                      {/* Moisture Card */}
+                      <View className="w-1/2 p-2">
+                        <View className="bg-white/30 rounded-2xl p-4">
+                          <View className="flex-row items-center mb-3">
+                            <WeatherIcon name="day-rain" size={20} color="#666" />
+                            <Text className="ml-2 text-blue-950 font-medium">Moisture</Text>
+                          </View>
+                          <View className="space-y-2">
+                            <View>
+                              <Text className="text-blue-950">Humidity</Text>
+                              <Text className="text-gray-900 text-lg font-semibold">
+                                {weatherData.current.humidity}%
+                              </Text>
+                            </View>
+                            <View>
+                              <Text className="text-blue-950">Precipitation</Text>
+                              <Text className="text-gray-900 font-semibold">
+                                {weatherData.current.precip_mm} mm
+                              </Text>
+                            </View>
+                            <View>
+                              <Text className="text-blue-950">Dew Point</Text>
+                              <Text className="text-gray-900 font-semibold">
+                                {weatherData.current.dewpoint_c}°C
+                              </Text>
+                            </View>
+                          </View>
+                        </View>
                       </View>
-                      <Text className="text-gray-800 font-semibold mt-1">
-                        {weatherData.current.pressure_mb} mb
-                      </Text>
-                    </View>
-                    <View className="w-1/2 p-2">
-                      <View className="flex-row items-center">
-                        <FontAwesome6 name="sun" size={20} color="#666" />
-                        <Text className="ml-2 text-gray-600">UV Index</Text>
+
+                      {/* UV & Cloud Card */}
+                      <View className="w-1/2 p-2">
+                        <View className="bg-white/30 rounded-2xl p-4">
+                          <View className="flex-row items-center mb-3">
+                            <FontAwesome6 name="sun" size={20} color="#666" />
+                            <Text className="ml-2 text-blue-950 font-medium">UV & Cloud</Text>
+                          </View>
+                          <View className="space-y-2">
+                            <View>
+                              <Text className="text-blue-950">UV Index</Text>
+                              <Text className="text-gray-900 text-lg font-semibold">
+                                {weatherData.current.uv}
+                              </Text>
+                            </View>
+                            <View>
+                              <Text className="text-blue-950">Cloud Cover</Text>
+                              <Text className="text-gray-900 font-semibold">
+                                {weatherData.current.cloud}%
+                              </Text>
+                            </View>
+                          </View>
+                        </View>
                       </View>
-                      <Text className="text-gray-800 font-semibold mt-1">
-                        {weatherData.current.uv}
-                      </Text>
-                    </View>
-                    <View className="w-1/2 p-2">
-                      <View className="flex-row items-center">
-                        <FontAwesome6 name="cloud" size={20} color="#666" />
-                        <Text className="ml-2 text-gray-600">Cloud Cover</Text>
+
+                      {/* Visibility Card */}
+                      <View className="w-1/2 p-2">
+                        <View className="bg-white/30 rounded-2xl p-4">
+                          <View className="flex-row items-center mb-3">
+                            <FontAwesome6 name="eye" size={20} color="#666" />
+                            <Text className="ml-2 text-blue-950 font-medium">Visibility</Text>
+                          </View>
+                          <View>
+                            <Text className="text-gray-900 text-lg font-semibold">
+                              {weatherData.current.vis_km} km
+                            </Text>
+                          </View>
+                        </View>
                       </View>
-                      <Text className="text-gray-800 font-semibold mt-1">
-                        {weatherData.current.cloud}%
-                      </Text>
+
+                      {/* Pressure Card */}
+                      <View className="w-1/2 p-2">
+                        <View className="bg-white/30 rounded-2xl p-4">
+                          <View className="flex-row items-center mb-3">
+                            <FontAwesome6 name="gauge-high" size={20} color="#666" />
+                            <Text className="ml-2 text-blue-950 font-medium">Pressure</Text>
+                          </View>
+                          <View>
+                            <Text className="text-gray-900 text-lg font-semibold">
+                              {weatherData.current.pressure_mb} mb
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
                     </View>
                   </View>
                 </View>
-
 
               </ScrollView>
           )}
