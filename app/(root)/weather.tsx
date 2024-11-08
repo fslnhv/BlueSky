@@ -13,7 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 
 import { useCallback, useState, useEffect } from "react";
-import {WeatherIconName, WeatherData, LocationType} from "@/types/weather";
+import {WeatherIconName, WeatherData, LocationType, ForecastDay} from "@/types/weather";
 import WeatherIcon from "@/components/WeatherIcon";
 import ScrollView = Animated.ScrollView;
 import { debounce } from 'lodash';
@@ -345,17 +345,6 @@ export default function WeatherScreen() {
                           )}
                         </View>
 
-                    </View>
-                  </View>
-                  <View>
-                    <Text className="text-xl text-gray-600 font-semibold mt-2 capitalize">
-                      {weatherData.current.condition.text}
-                    </Text>
-                    <Text className="text-gray-500 font-semibold mt-1">
-                      Feels like {Math.round(weatherData.current.feelslike_c)}°C
-                    </Text>
-                  </View>
-                </View>
                       </View>
                     </View>
                     <View className="items-end">
@@ -489,65 +478,167 @@ export default function WeatherScreen() {
                 )}
 
                 {/* Current Stats */}
-                <View>
-                  <Text className="text-blue-950 font-semibold ml-4">
+                <View className="mb-6">
+                  <Text className="text-blue-950 font-semibold ml-4 mb-2">
                     Current Conditions
                   </Text>
-                  <View className="bg-white/30 rounded-2xl p-4 mt-4 mb-4">
-                    <View className="flex-row justify-between flex-wrap">
-                      <View className="w-1/2 p-2">
-                        <View className="flex-row items-center">
-                          <WeatherIcon name="windy" size={20} color="#666" />
-                          <Text className="ml-2 text-gray-600">Wind</Text>
+
+                  <View className="mx-2">
+                    {/* Main Grid Container */}
+                    <View className="flex-row flex-wrap">
+                      {/* Temperature Card - Full Width */}
+                      <View className="w-full p-2">
+                        <View className="bg-white/30 rounded-2xl p-4">
+                          <View className="flex-row justify-between items-center">
+                            <View className="flex-row items-center">
+                              <FontAwesome6 name="temperature-half" size={20} color="#666" />
+                              <Text className="ml-2 text-blue-950 font-medium">Temperature</Text>
+                            </View>
+                            <Text className="text-blue-950 text-2xl font-semibold">
+                              {weatherData.current.temp_c}°C
+                            </Text>
+                          </View>
+                          <View className="flex-row justify-between mt-4">
+                            <View className="items-center">
+                              <Text className="text-blue-950">Feels Like</Text>
+                              <Text className="text-gray-900 font-semibold mt-1">
+                                {weatherData.current.feelslike_c}°C
+                              </Text>
+                            </View>
+                            <View className="items-center">
+                              <Text className="text-blue-950">Heat Index</Text>
+                              <Text className="text-gray-900 font-semibold mt-1">
+                                {weatherData.current.heatindex_c}°C
+                              </Text>
+                            </View>
+                            <View className="items-center">
+                              <Text className="text-blue-950">Wind Chill</Text>
+                              <Text className="text-gray-900 font-semibold mt-1">
+                                {weatherData.current.windchill_c}°C
+                              </Text>
+                            </View>
+                          </View>
                         </View>
-                        <Text className="text-blue-950 font-semibold mt-1">
-                          {weatherData.current.wind_kph} km/h {weatherData.current.wind_dir}
-                        </Text>
                       </View>
-                      <View className="w-1/2 p-2">
-                        <View className="flex-row items-center">
-                          <WeatherIcon name="day-rain" size={20} color="#666" />
-                          <Text className="ml-2 text-gray-600">Humidity</Text>
+
+                      {/* Wind Card - Full Width */}
+                      <View className="w-full p-2">
+                        <View className="bg-white/30 rounded-2xl p-4">
+                          <View className="flex-row justify-between items-center">
+                            <View className="flex-row items-center">
+                              <WeatherIcon name="windy" size={20} color="#666" />
+                              <Text className="ml-2 text-blue-950 font-medium">Wind</Text>
+                            </View>
+                            <Text className="text-blue-950 text-2xl font-semibold">
+                              {weatherData.current.wind_kph} km/h
+                            </Text>
+                          </View>
+                          <View className="flex-row justify-between mt-4">
+                            <View className="items-center">
+                              <Text className="text-blue-950">Direction</Text>
+                              <Text className="text-gray-900 font-semibold mt-1">
+                                {weatherData.current.wind_dir}
+                              </Text>
+                            </View>
+                            <View className="items-center">
+                              <Text className="text-blue-950">Degree</Text>
+                              <Text className="text-gray-900 font-semibold mt-1">
+                                {weatherData.current.wind_degree}°
+                              </Text>
+                            </View>
+                            <View className="items-center">
+                              <Text className="text-blue-950">Gust</Text>
+                              <Text className="text-gray-900 font-semibold mt-1">
+                                {weatherData.current.gust_kph} km/h
+                              </Text>
+                            </View>
+                          </View>
                         </View>
-                        <Text className="text-blue-950 font-semibold mt-1">
-                          {weatherData.current.humidity}%
-                        </Text>
                       </View>
+
+                      {/* 2x2 Grid for Medium-sized Cards */}
+                      {/* Moisture Card */}
                       <View className="w-1/2 p-2">
-                        <View className="flex-row items-center">
-                          <FontAwesome6 name="eye" size={20} color="#666" />
-                          <Text className="ml-2 text-gray-600">Visibility</Text>
+                        <View className="bg-white/30 rounded-2xl p-4">
+                          <View className="flex-row items-center mb-3">
+                            <WeatherIcon name="day-rain" size={20} color="#666" />
+                            <Text className="ml-2 text-blue-950 font-medium">Moisture</Text>
+                          </View>
+                          <View className="space-y-2">
+                            <View>
+                              <Text className="text-blue-950">Humidity</Text>
+                              <Text className="text-gray-900 text-lg font-semibold">
+                                {weatherData.current.humidity}%
+                              </Text>
+                            </View>
+                            <View>
+                              <Text className="text-blue-950">Precipitation</Text>
+                              <Text className="text-gray-900 font-semibold">
+                                {weatherData.current.precip_mm} mm
+                              </Text>
+                            </View>
+                            <View>
+                              <Text className="text-blue-950">Dew Point</Text>
+                              <Text className="text-gray-900 font-semibold">
+                                {weatherData.current.dewpoint_c}°C
+                              </Text>
+                            </View>
+                          </View>
                         </View>
-                        <Text className="text-blue-950 font-semibold mt-1">
-                          {weatherData.current.vis_km} km
-                        </Text>
                       </View>
+
+                      {/* UV & Cloud Card */}
                       <View className="w-1/2 p-2">
-                        <View className="flex-row items-center">
-                          <FontAwesome6 name="gauge-high" size={20} color="#666" />
-                          <Text className="ml-2 text-gray-600">Pressure</Text>
+                        <View className="bg-white/30 rounded-2xl p-4">
+                          <View className="flex-row items-center mb-3">
+                            <FontAwesome6 name="sun" size={20} color="#666" />
+                            <Text className="ml-2 text-blue-950 font-medium">UV & Cloud</Text>
+                          </View>
+                          <View className="space-y-2">
+                            <View>
+                              <Text className="text-blue-950">UV Index</Text>
+                              <Text className="text-gray-900 text-lg font-semibold">
+                                {weatherData.current.uv}
+                              </Text>
+                            </View>
+                            <View>
+                              <Text className="text-blue-950">Cloud Cover</Text>
+                              <Text className="text-gray-900 font-semibold">
+                                {weatherData.current.cloud}%
+                              </Text>
+                            </View>
+                          </View>
                         </View>
-                        <Text className="text-blue-950 font-semibold mt-1">
-                          {weatherData.current.pressure_mb} mb
-                        </Text>
                       </View>
+
+                      {/* Visibility Card */}
                       <View className="w-1/2 p-2">
-                        <View className="flex-row items-center">
-                          <FontAwesome6 name="sun" size={20} color="#666" />
-                          <Text className="ml-2 text-gray-600">UV Index</Text>
+                        <View className="bg-white/30 rounded-2xl p-4">
+                          <View className="flex-row items-center mb-3">
+                            <FontAwesome6 name="eye" size={20} color="#666" />
+                            <Text className="ml-2 text-blue-950 font-medium">Visibility</Text>
+                          </View>
+                          <View>
+                            <Text className="text-gray-900 text-lg font-semibold">
+                              {weatherData.current.vis_km} km
+                            </Text>
+                          </View>
                         </View>
-                        <Text className="text-blue-950 font-semibold mt-1">
-                          {weatherData.current.uv}
-                        </Text>
                       </View>
+
+                      {/* Pressure Card */}
                       <View className="w-1/2 p-2">
-                        <View className="flex-row items-center">
-                          <FontAwesome6 name="cloud" size={20} color="#666" />
-                          <Text className="ml-2 text-gray-600">Cloud Cover</Text>
+                        <View className="bg-white/30 rounded-2xl p-4">
+                          <View className="flex-row items-center mb-3">
+                            <FontAwesome6 name="gauge-high" size={20} color="#666" />
+                            <Text className="ml-2 text-blue-950 font-medium">Pressure</Text>
+                          </View>
+                          <View>
+                            <Text className="text-gray-900 text-lg font-semibold">
+                              {weatherData.current.pressure_mb} mb
+                            </Text>
+                          </View>
                         </View>
-                        <Text className="text-blue-950 font-semibold mt-1">
-                          {weatherData.current.cloud}%
-                        </Text>
                       </View>
                     </View>
                   </View>
