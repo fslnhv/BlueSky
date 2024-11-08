@@ -366,6 +366,49 @@ export default function WeatherScreen() {
                     </Text>
                   </View>
                 </View>
+
+                {/*Hourly Forecast*/}
+                {weatherData.forecast && weatherData.forecast.forecastday[0].hour && (
+                    <View className="mt-6">
+                      <Text className="text-blue-950 font-semibold ml-4 mb-2">
+                        Hourly Forecast
+                      </Text>
+                      <ScrollView
+                          horizontal
+                          showsHorizontalScrollIndicator={false}
+                          className="p-2 bg-white/30 rounded-2xl"
+                      >
+                        {[
+                          ...filterHourlyForecast(weatherData.forecast.forecastday[0]),
+                          ...(weatherData.forecast.forecastday[1]?.hour || [])
+                        ]
+                            .slice(0, 24)
+                            .map((hour, index) => (
+                                <View
+                                    key={hour.time}
+                                    className="items-center rounded-2xl py-2 px-2 mr-4"
+                                >
+                                  <Text className="text-blue-950 font-semibold">
+                                    {Math.round(hour.temp_c)}°
+                                  </Text>
+                                  {hour.condition.icon && (
+                                      <Image
+                                          source={{ uri: `https:${hour.condition.icon}` }}
+                                          className=""
+                                          style={{ width: 62, height: 64 }}
+                                      />
+                                  )}
+
+                                  <Text className="text-blue-950 font-medium mb-1">
+                                    {index === 0 ? 'Now' : getHourFromTime(hour.time)}
+                                  </Text>
+                                </View>
+                            ))}
+                      </ScrollView>
+                    </View>
+                )}
+
+
                 {/* Forecast Section */}
                 {weatherData.forecast && (
                     <View className="mt-6 mb-6">
